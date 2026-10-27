@@ -16,10 +16,11 @@
   <section id="castPage">
     <h1>小六壬·掌中起课</h1>
     <div class="card">
-      <h2>起课输入</h2>
+      <h2>起课时间</h2>
       <div class="grid">
-        <label>农历月份<select id="month"></select></label>
-        <label>农历日期<select id="day"></select></label>
+        <label>公历日期<input id="solarDate" type="date"></label>
+        <label>公历时间<input id="solarTime" type="time"></label>
+        <label>农历日期<input id="lunarText" readonly></label>
         <label>时辰<select id="hour"></select></label>
         <label>问题备注<input id="note" maxlength="80" placeholder="可选"></label>
       </div>
@@ -33,15 +34,26 @@
 </main>
 <nav class="tabs"><button data-page="castPage">起课</button><button data-page="historyPage">历史</button><button data-page="knowledgePage">六宫</button></nav>
 <script>
-const palaces=[['大安','偏吉：安稳、平顺，适合稳步推进。'],['留连','平中有阻：进展可能迟缓或反复，宜耐心核实。'],['速喜','偏吉：容易出现消息或较快进展，宜及时跟进。'],['赤口','偏凶：注意口舌、误会和沟通冲突。'],['小吉','小吉：可能得到有限助力，适合稳妥争取。'],['空亡','不确定：预期可能落空，重要事项应再次核实。']];
+const palaces=[
+ {name:'大安',level:'偏吉',meaning:'安稳、平顺、守成',scene:'事情整体较稳，适合按计划推进，急于求变反而未必有利。',action:'保持现有节奏，先确认基础条件，再稳步执行。',risk:'不要把“稳定”理解成必然成功，仍需核实现实条件。'},
+ {name:'留连',level:'平中有阻',meaning:'迟缓、牵连、反复',scene:'事情可能出现等待、修改或反复沟通，进度不宜估得过快。',action:'预留缓冲时间，明确下一步负责人和截止时间。',risk:'避免因为一次延迟就做出绝对判断。'},
+ {name:'速喜',level:'偏吉',meaning:'快速、消息、进展',scene:'较容易出现消息或阶段性进展，适合及时响应和跟进。',action:'保持沟通畅通，收到信息后尽快核实并行动。',risk:'快不等于稳，不要忽略细节和书面确认。'},
+ {name:'赤口',level:'偏凶',meaning:'口舌、争执、误会',scene:'沟通和立场差异可能成为主要变量，文字表达尤其要谨慎。',action:'先听后说，重要事项使用清晰、可留痕的表达。',risk:'不要用占卜结果替代事实、证据或专业意见。'},
+ {name:'小吉',level:'小吉',meaning:'助力、小成、渐进',scene:'可能得到有限帮助或小幅改善，更适合积累而非孤注一掷。',action:'拆分目标，先完成最容易验证的一步。',risk:'小有顺利不代表所有环节都会顺利。'},
+ {name:'空亡',level:'不确定',meaning:'落空、虚耗、信息不实',scene:'当前信息或预期可能不完整，计划存在落空或需要重来的可能。',action:'重新核实关键事实，准备备选方案。',risk:'不要恐慌，也不要把传统象意当作现实结论。'}
+];
 const hours=['子时','丑时','寅时','卯时','辰时','巳时','午时','未时','申时','酉时','戌时','亥时'];
 const $=id=>document.getElementById(id); const fill=(el,items)=>items.forEach((x,i)=>el.add(new Option(x,i)));
-fill($('month'),Array.from({length:12},(_,i)=>`农历${i+1}月`)); fill($('day'),Array.from({length:30},(_,i)=>`农历${i+1}日`)); fill($('hour'),hours);
+fill($('hour'),hours); const now=new Date(); $('solarDate').value=now.toISOString().slice(0,10); $('solarTime').value=now.toTimeString().slice(0,5);
+function lunarNumber(v){const months={'正':1,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,'冬':11,'腊':12};if(/^\d+$/.test(v))return +v;if(v.includes('月'))return months[v.replace('月','')]||0;const days={'初一':1,'初二':2,'初三':3,'初四':4,'初五':5,'初六':6,'初七':7,'初八':8,'初九':9,'初十':10,'十一':11,'十二':12,'十三':13,'十四':14,'十五':15,'十六':16,'十七':17,'十八':18,'十九':19,'二十':20,'廿一':21,'廿二':22,'廿三':23,'廿四':24,'廿五':25,'廿六':26,'廿七':27,'廿八':28,'廿九':29,'三十':30};return days[v]||0;}
+function lunarFromSolar(){const d=new Date(`${$('solarDate').value}T${$('solarTime').value||'00:00'}:00`);const parts=new Intl.DateTimeFormat('zh-CN-u-ca-chinese',{month:'numeric',day:'numeric'}).formatToParts(d);const m=parts.find(x=>x.type==='month')?.value||'';const day=parts.find(x=>x.type==='day')?.value||'';return {date:d,month:lunarNumber(m),day:lunarNumber(day),text:`农历${m}${m.includes('月')?'':'月'}${day}日`};}
+function updateLunar(){const l=lunarFromSolar();$('lunarText').value=l.text;const h=l.date.getHours();$('hour').value=(h===23||h===0)?0:((h+1)/2|0)%12;}
+$('solarDate').onchange=updateLunar;$('solarTime').onchange=updateLunar;updateLunar();
 function cast(m,d,h){const mi=(m-1)%6,di=(mi+d-1)%6,hi=(di+h)%6;return {m,d,h,mi,di,hi};}
-function render(r){$('result').classList.remove('hidden');$('result').innerHTML=`<h2>推算过程</h2><div class="steps"><div class="step">月宫<br><b>${palaces[r.mi][0]}</b></div><div class="step">日宫<br><b>${palaces[r.di][0]}</b></div><div class="step">时宫<br><b>${palaces[r.hi][0]}</b></div></div><div class="result"><div class="palace">${palaces[r.hi][0]}</div><p>${palaces[r.hi][1]}</p></div><button id="save">保存到历史记录</button>`;$('save').onclick=()=>{const list=JSON.parse(localStorage.xlr||'[]');list.unshift({...r,note:$('note').value,time:new Date().toLocaleString()});localStorage.xlr=JSON.stringify(list.slice(0,50));loadHistory();};}
-$('cast').onclick=()=>render(cast(+$('month').value+1,+$('day').value+1,+$('hour').value));
-function loadHistory(){const list=JSON.parse(localStorage.xlr||'[]');$('history').innerHTML=list.length?list.map(x=>`<div class="card"><div class="row"><b>${palaces[x.hi][0]}</b><span class="muted">${x.time}</span></div><p>${palaces[x.hi][1]}</p>${x.note?`<p class="muted">${x.note}</p>`:''}</div>`).join(''):'<div class="card muted">暂无记录</div>';}
-$('knowledge').innerHTML=palaces.map(p=>`<div class="card"><h2>${p[0]}</h2><p>${p[1]}</p></div>`).join('');loadHistory();
+function render(r,l){const p=palaces[r.hi];$('result').classList.remove('hidden');$('result').innerHTML=`<h2>推算过程</h2><div class="steps"><div class="step">月宫<br><b>${palaces[r.mi].name}</b></div><div class="step">日宫<br><b>${palaces[r.di].name}</b></div><div class="step">时宫<br><b>${palaces[r.hi].name}</b></div></div><div class="result"><div class="palace">${p.name}</div><p><b>${p.level}</b> · ${p.meaning}</p></div><hr><h2>解卦说明</h2><p><b>可能表现：</b>${p.scene}</p><p><b>行动建议：</b>${p.action}</p><p><b>风险提示：</b>${p.risk}</p><p class="muted">起课：公历${$('solarDate').value} ${$('solarTime').value} · ${l.text} · ${hours[r.h]}</p><button id="save">保存到历史记录</button>`;$('save').onclick=()=>{const list=JSON.parse(localStorage.xlr||'[]');list.unshift({...r,note:$('note').value,time:new Date().toLocaleString(),solar:$('solarDate').value,lunar:l.text});localStorage.xlr=JSON.stringify(list.slice(0,50));loadHistory();};}
+$('cast').onclick=()=>{const l=lunarFromSolar();if(!l.month||!l.day){alert('当前日期暂时无法转换，请更换日期');return;}render(cast(l.month,l.day,+$('hour').value),l);};
+function loadHistory(){const list=JSON.parse(localStorage.xlr||'[]');$('history').innerHTML=list.length?list.map(x=>{const p=palaces[x.hi];return `<div class="card"><div class="row"><b>${p.name} · ${p.level}</b><span class="muted">${x.time}</span></div><p>${p.meaning}</p><p>${p.action}</p>${x.note?`<p class="muted">${x.note}</p>`:''}</div>`}).join(''):'<div class="card muted">暂无记录</div>';}
+ $('knowledge').innerHTML=palaces.map(p=>`<div class="card"><h2>${p.name} · ${p.level}</h2><p><b>象意：</b>${p.meaning}</p><p><b>可能表现：</b>${p.scene}</p><p><b>建议：</b>${p.action}</p><p><b>风险：</b>${p.risk}</p></div>`).join('');loadHistory();
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));$(b.dataset.page).classList.remove('hidden');if(b.dataset.page==='historyPage')loadHistory();});
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
