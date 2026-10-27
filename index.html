@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f3ec">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>小六壬·掌中起课</title>
+  <style>
+    :root{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#27231f;background:#f7f3ec}
+    body{margin:0}.app{max-width:680px;margin:auto;padding:24px 18px 90px}.card{background:#fff;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 3px 16px #6c4d2614}h1{font-size:28px;margin:8px 0 20px}h2{font-size:17px;margin:0 0 14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{font-size:13px;color:#736b64}select,input,button{width:100%;box-sizing:border-box;border:1px solid #ddd2c5;border-radius:11px;padding:12px;background:#fff;font-size:16px;margin-top:6px}button{background:#7b3f27;color:#fff;border:0;font-weight:600}.result{text-align:center}.palace{font-size:42px;font-weight:700;color:#7b3f27}.muted{color:#777}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.step{background:#f7f3ec;border-radius:12px;padding:12px;text-align:center}.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eadfd3;display:flex;justify-content:center;gap:24px;padding:10px env(safe-area-inset-right) calc(10px + env(safe-area-inset-bottom))}.tabs button{width:auto;background:none;color:#7b3f27;padding:6px 14px}.hidden{display:none}.row{display:flex;justify-content:space-between;gap:12px;align-items:center}.danger{background:#f7e9e4;color:#8b3d2b}
+  </style>
+</head>
+<body>
+<main class="app">
+  <section id="castPage">
+    <h1>小六壬·掌中起课</h1>
+    <div class="card">
+      <h2>起课输入</h2>
+      <div class="grid">
+        <label>农历月份<select id="month"></select></label>
+        <label>农历日期<select id="day"></select></label>
+        <label>时辰<select id="hour"></select></label>
+        <label>问题备注<input id="note" maxlength="80" placeholder="可选"></label>
+      </div>
+      <button id="cast">立即起课</button>
+    </div>
+    <div id="result" class="card hidden"></div>
+    <div class="card"><p class="muted">本应用用于传统民俗文化学习与娱乐参考，不构成医疗、投资、法律或其他现实决策建议。</p></div>
+  </section>
+  <section id="historyPage" class="hidden"><h1>历史记录</h1><div id="history"></div></section>
+  <section id="knowledgePage" class="hidden"><h1>六宫速查</h1><div id="knowledge"></div></section>
+</main>
+<nav class="tabs"><button data-page="castPage">起课</button><button data-page="historyPage">历史</button><button data-page="knowledgePage">六宫</button></nav>
+<script>
+const palaces=[['大安','偏吉：安稳、平顺，适合稳步推进。'],['留连','平中有阻：进展可能迟缓或反复，宜耐心核实。'],['速喜','偏吉：容易出现消息或较快进展，宜及时跟进。'],['赤口','偏凶：注意口舌、误会和沟通冲突。'],['小吉','小吉：可能得到有限助力，适合稳妥争取。'],['空亡','不确定：预期可能落空，重要事项应再次核实。']];
+const hours=['子时','丑时','寅时','卯时','辰时','巳时','午时','未时','申时','酉时','戌时','亥时'];
+const $=id=>document.getElementById(id); const fill=(el,items)=>items.forEach((x,i)=>el.add(new Option(x,i)));
+fill($('month'),Array.from({length:12},(_,i)=>`农历${i+1}月`)); fill($('day'),Array.from({length:30},(_,i)=>`农历${i+1}日`)); fill($('hour'),hours);
+function cast(m,d,h){const mi=(m-1)%6,di=(mi+d-1)%6,hi=(di+h)%6;return {m,d,h,mi,di,hi};}
+function render(r){$('result').classList.remove('hidden');$('result').innerHTML=`<h2>推算过程</h2><div class="steps"><div class="step">月宫<br><b>${palaces[r.mi][0]}</b></div><div class="step">日宫<br><b>${palaces[r.di][0]}</b></div><div class="step">时宫<br><b>${palaces[r.hi][0]}</b></div></div><div class="result"><div class="palace">${palaces[r.hi][0]}</div><p>${palaces[r.hi][1]}</p></div><button id="save">保存到历史记录</button>`;$('save').onclick=()=>{const list=JSON.parse(localStorage.xlr||'[]');list.unshift({...r,note:$('note').value,time:new Date().toLocaleString()});localStorage.xlr=JSON.stringify(list.slice(0,50));loadHistory();};}
+$('cast').onclick=()=>render(cast(+$('month').value+1,+$('day').value+1,+$('hour').value));
+function loadHistory(){const list=JSON.parse(localStorage.xlr||'[]');$('history').innerHTML=list.length?list.map(x=>`<div class="card"><div class="row"><b>${palaces[x.hi][0]}</b><span class="muted">${x.time}</span></div><p>${palaces[x.hi][1]}</p>${x.note?`<p class="muted">${x.note}</p>`:''}</div>`).join(''):'<div class="card muted">暂无记录</div>';}
+$('knowledge').innerHTML=palaces.map(p=>`<div class="card"><h2>${p[0]}</h2><p>${p[1]}</p></div>`).join('');loadHistory();
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));$(b.dataset.page).classList.remove('hidden');if(b.dataset.page==='historyPage')loadHistory();});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body></html>
