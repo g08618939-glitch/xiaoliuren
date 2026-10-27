@@ -1,0 +1,4 @@
+<!doctype html><meta charset="utf-8"><title>九神小六壬测试</title><pre id="out"></pre><script type="module">
+import {index,cycle,threeNumbers,lunarTime,relation,board} from './engine.js';const t=[];function ok(x,n){t.push((x?'PASS ':'FAIL ')+n)}
+ok(index(1)===1&&index(9)===9&&index(10)===1&&index(11)===2&&index(18)===9&&index(19)===1,'九神循环边界');ok(cycle(8,3).join('、')==='桃花、天德、大安','正向循环');ok(threeNumbers(1,2,3).transmissions.length===3,'三数三传');ok(lunarTime(1,1,0).transmissions[0]===1,'农历输入');ok(relation('木','火').type==='相生','五行相生');ok(relation('木','土').type==='相克','五行相克');ok(board([1,2,3]).length===3,'九宫三行');document.querySelector('#out').textContent=t.join('\n')+'\n\n'+(t.every(x=>x.startsWith('PASS'))?'全部通过':'存在失败');
+</script>
